@@ -1,0 +1,168 @@
+<div class="page-head">
+  <h1>{{ post() ? 'Modifier le post' : 'Nouveau post' }}</h1>
+  @if (post(); as p) {
+    <span class="badge status-{{ p.status.toLowerCase() }}">{{ statusLabels[p.status] }}</span>
+  }
+  <a class="btn ghost" routerLink="/calendrier">Retour</a>
+</div>
+
+@if (error()) { <p class="alert error">{{ error() }}</p> }
+@if (notice()) { <p class="alert ok">{{ notice() }}</p> }
+
+<div class="editor-layout">
+  <div class="editor-main">
+    <!-- Modèles -->
+    @if (editable()) {
+      <section class="card">
+        <h3>Modèle</h3>
+        <div class="segmented">
+          @for (t of templates; track t.id) {
+            <button type="button" [class.on]="template() === t.id" (click)="template.set(t.id)" [title]="t.hint">{{ t.label }}</button>
+          }
+        </div>
+
+        @if (template() !== 'libre') {
+          <div class="grid-2">
+            <label>Nom du club <input [(ngModel)]="fields.club" placeholder="HBC Exemple" /></label>
+            <label>Équipe <input [(ngModel)]="fields.equipe" placeholder="Seniors F, U15 M…" /></label>
+            <label>Adversaire <input [(ngModel)]="fields.adversaire" /></label>
+            <label>Compétition <input [(ngModel)]="fields.competition" placeholder="Championnat, Coupe…" /></label>
+            <label>Lieu
+              <select [(ngModel)]="fields.domicile">
+                <option [ngValue]="true">À domicile</option>
+                <option [ngValue]="false">À l’extérieur</option>
+              </select>
+            </label>
+            <label>Salle <input [(ngModel)]="fields.salle" placeholder="Gymnase…" /></label>
+
+            @if (template() !== 'resultat') {
+              <label>Date du match <input type="date" [(ngModel)]="fields.date" /></label>
+              <label>Heure du match <input type="time" [(ngModel)]="fields.heure" /></label>
+            }
+            @if (template() === 'resultat') {
+              <label>Notre score <input type="number" min="0" [(ngModel)]="fields.scoreNous" /></label>
+              <label>Score adverse <input type="number" min="0" [(ngModel)]="fields.scoreEux" /></label>
+              <label class="span-2">Joueurs à l’honneur <input [(ngModel)]="fields.meilleurs" placeholder="Lisa (8 buts), Tom (12 arrêts)" /></label>
+            }
+            @if (template() === 'convocation') {
+              <label>Heure de rendez-vous <input type="time" [(ngModel)]="fields.rdvHeure" /></label>
+              <label class="span-2">Joueurs convoqués (un par ligne)
+                <textarea rows="5" [(ngModel)]="fields.joueurs"></textarea>
+              </label>
+            }
+            <label class="span-2">Hashtags <input [(ngModel)]="fields.hashtags" /></label>
+          </div>
+          <button type="button" class="btn" (click)="generate()">Générer le texte ↓</button>
+        }
+      </section>
+    }
+
+    <!-- Texte -->
+    <section class="card">
+      <div class="row-between">
+        <h3>Texte</h3>
+        <span class="muted small" [class.over]="caption().length > maxCaption">{{ caption().length }} / {{ maxCaption }}</span>
+      </div>
+      <textarea class="caption" rows="10" [(ngModel)]="caption" [readonly]="!editable()"
+                placeholder="Écrivez votre texte, ou générez-le avec un modèle."></textarea>
+      @if (tiktok()) {
+        <button type="button" class="btn ghost small" (click)="copyCaption()">Copier le texte (pour TikTok)</button>
+      }
+    </section>
+
+    <!-- Médias -->
+    <section class="card">
+      <div class="row-between">
+        <h3>Photos et vidéos</h3>
+        <span class="muted small">{{ format() }}</span>
+      </div>
+      <div class="media-grid">
+        @for (m of media(); track m.id; let i = $index; let first = $first; let last = $last) {
+          <figure class="media-item">
+            @if (m.kind === 'IMAGE') {
+              <img [src]="m.previewUrl" [alt]="m.originalName" />
+            } @else {
+              <video [src]="m.previewUrl" muted preload="metadata" controls></video>
+            }
+            @if (editable()) {
+              <div class="media-actions">
+                <button type="button" (click)="move(i, -1)" [disabled]="first" aria-label="Avancer">‹</button>
+                <button type="button" (click)="remove(i)" aria-label="Retirer">✕</button>
+                <button type="button" (click)="move(i, 1)" [disabled]="last" aria-label="Reculer">›</button>
+              </div>
+            }
+          </figure>
+        }
+        @if (editable()) {
+          <label class="media-add">
+            <input type="file" accept="image/jpeg,image/png,video/mp4,video/quicktime" multiple (change)="onFiles($event)" hidden />
+            <span>{{ uploading() ? 'Envoi…' : '+ Ajouter' }}</span>
+          </label>
+        }
+      </div>
+      <p class="muted small">JPEG ou PNG (converti automatiquement), MP4 ou MOV. Pour Instagram : format entre 4:5 (portrait) et 1.91:1 (paysage).</p>
+    </section>
+  </div>
+
+  <aside class="editor-side">
+    <section class="card">
+      <h3>Réseaux</h3>
+      <label class="check"><input type="checkbox" [(ngModel)]="instagram" [disabled]="!editable()" /> Instagram
+        <span class="muted small">photo, carrousel (2 à 10) ou Reel</span></label>
+      <label class="check"><input type="checkbox" [(ngModel)]="tiktok" [disabled]="!editable()" /> TikTok
+        <span class="muted small">une vidéo, envoyée en brouillon dans l’app</span></label>
+    </section>
+
+    @if (editable()) {
+      <section class="card">
+        <h3>Publication</h3>
+        <label class="check"><input type="radio" name="when" [value]="true" [(ngModel)]="scheduled" /> Programmer</label>
+        @if (scheduled()) {
+          <input type="datetime-local" [(ngModel)]="scheduledLocal" />
+        }
+        <label class="check"><input type="radio" name="when" [value]="false" [(ngModel)]="scheduled" /> Garder en brouillon</label>
+
+        @if (problems().length) {
+          <ul class="problems">
+            @for (pb of problems(); track pb) { <li>{{ pb }}</li> }
+          </ul>
+        }
+
+        <div class="actions">
+          @if (scheduled()) {
+            <button class="btn primary" (click)="submit()" [disabled]="busy() || uploading() > 0 || problems().length > 0">Programmer</button>
+          }
+          <button class="btn" (click)="saveDraft()" [disabled]="busy() || uploading() > 0">Enregistrer le brouillon</button>
+          <button class="btn ghost" (click)="publishNow()"
+                  [disabled]="busy() || uploading() > 0 || contentProblems().length > 0">
+            Publier maintenant
+          </button>
+          @if (post()) {
+            <button class="btn danger ghost" (click)="remove_()" [disabled]="busy()">Supprimer</button>
+          }
+        </div>
+      </section>
+    }
+
+    @if (post(); as p) {
+      @if (p.publications.length) {
+        <section class="card">
+          <h3>Historique</h3>
+          @for (pub of p.publications; track $index) {
+            <div class="pub pub-{{ pub.status.toLowerCase() }}">
+              <strong>{{ platformLabels[pub.platform] }} · {{ publicationLabels[pub.status] }}</strong>
+              <span class="muted small">{{ formatDateTime(pub.attemptedAt) }}</span>
+              @if (pub.message) {
+                @if (pub.message.startsWith('https://')) {
+                  <a [href]="pub.message" target="_blank" rel="noopener">Voir le post</a>
+                } @else {
+                  <span class="small">{{ pub.message }}</span>
+                }
+              }
+            </div>
+          }
+        </section>
+      }
+    }
+  </aside>
+</div>

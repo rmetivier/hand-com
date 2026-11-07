@@ -1,0 +1,65 @@
+<div class="page-head">
+  <h1>Comptes</h1>
+</div>
+
+@if (error()) { <p class="alert error">{{ error() }}</p> }
+@if (notice()) { <p class="alert ok">{{ notice() }}</p> }
+
+@if (config(); as c) {
+  @if (!c.publicUrlReachable) {
+    <div class="alert warn">
+      <strong>URL publique non configurée.</strong>
+      Instagram et TikTok doivent pouvoir joindre votre serveur en HTTPS (retour de connexion, téléchargement des photos).
+      Lancez un tunnel (ngrok ou Cloudflare) vers le port 8080, puis renseignez
+      <code>PUBLIC_BASE_URL</code> dans le fichier <code>.env</code> et redémarrez le backend.
+      Valeur actuelle : <code>{{ c.publicBaseUrl }}</code>
+    </div>
+  }
+}
+
+<div class="accounts">
+  @for (a of accounts(); track a.platform) {
+    <section class="card account net-border-{{ a.platform.toLowerCase() }}">
+      <div class="row-between">
+        <h2><span class="net net-{{ a.platform.toLowerCase() }}">{{ a.platform === 'INSTAGRAM' ? 'IG' : 'TT' }}</span> {{ labels[a.platform] }}</h2>
+        @if (a.connected) { <span class="badge status-published">Connecté</span> }
+        @else { <span class="badge status-draft">Non connecté</span> }
+      </div>
+
+      @if (a.connected) {
+        <p><strong>{{ a.username || 'Compte' }}</strong></p>
+        <p class="muted small">Connecté le {{ formatDateTime(a.connectedAt) }}
+          @if (a.platform === 'INSTAGRAM' && a.accessExpiresAt) { · jeton valable jusqu’au {{ formatDateTime(a.accessExpiresAt) }} (renouvelé automatiquement) }
+        </p>
+        <div class="actions">
+          <button class="btn" (click)="connect(a.platform)" [disabled]="busy() === a.platform">Reconnecter</button>
+          <button class="btn danger ghost" (click)="disconnect(a.platform)" [disabled]="busy() === a.platform">Déconnecter</button>
+        </div>
+      } @else if (!a.configured) {
+        <p class="muted">Les identifiants de l’app {{ labels[a.platform] }} ne sont pas encore renseignés dans <code>.env</code>
+          ({{ a.platform === 'INSTAGRAM' ? 'INSTAGRAM_CLIENT_ID / INSTAGRAM_CLIENT_SECRET' : 'TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET' }}).
+          Voir le README, section « Créer les apps ».</p>
+      } @else {
+        <button class="btn primary" (click)="connect(a.platform)" [disabled]="busy() === a.platform">
+          Connecter le compte {{ labels[a.platform] }}
+        </button>
+      }
+
+      <details>
+        <summary>URL de redirection à déclarer dans l’app {{ labels[a.platform] }}</summary>
+        <div class="copy-row">
+          <code>{{ redirectUri(a.platform) }}</code>
+          <button class="btn ghost small" (click)="copy(redirectUri(a.platform))">Copier</button>
+        </div>
+      </details>
+
+      @if (a.platform === 'TIKTOK') {
+        <p class="muted small">Les vidéos arrivent en brouillon dans les notifications de l’app TikTok : il suffit de les ouvrir,
+          coller le texte et publier. La publication 100 % automatique demande un audit de l’app par TikTok.</p>
+      } @else {
+        <p class="muted small">Il faut un compte Instagram <strong>professionnel</strong> (Créateur ou Entreprise), gratuit à activer
+          dans les paramètres de l’app Instagram.</p>
+      }
+    </section>
+  }
+</div>

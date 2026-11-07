@@ -1,0 +1,74 @@
+<div class="page-head">
+  <h1>Calendrier</h1>
+  <a class="btn primary" routerLink="/posts/nouveau">+ Nouveau post</a>
+</div>
+
+@if (error()) { <p class="alert error">{{ error() }}</p> }
+
+<div class="calendar-layout">
+  <section class="card calendar">
+    <div class="cal-toolbar">
+      <button class="btn ghost small" (click)="shift(-1)" aria-label="Mois précédent">‹</button>
+      <h2 class="cal-title">{{ monthLabel() }}</h2>
+      <button class="btn ghost small" (click)="shift(1)" aria-label="Mois suivant">›</button>
+      <button class="btn ghost small" (click)="today()">Aujourd’hui</button>
+    </div>
+
+    <div class="cal-grid">
+      @for (w of weekdays; track w) { <div class="cal-weekday">{{ w }}</div> }
+      @for (day of days(); track day.key) {
+        <div class="cal-day" [class.out]="!day.inMonth" [class.today]="day.isToday">
+          <div class="cal-day-head">
+            <span class="cal-num">{{ day.date.getDate() }}</span>
+            <button class="cal-add" (click)="newOn(day)" title="Programmer un post ce jour-là" aria-label="Nouveau post">+</button>
+          </div>
+          @for (p of day.posts; track p.id) {
+            <a class="cal-post status-{{ p.status.toLowerCase() }}" [routerLink]="['/posts', p.id]">
+              <span class="cal-time">{{ formatTime(p.scheduledAt!) }}</span>
+              <span class="cal-nets">
+                @for (pl of p.platforms; track pl) { <span class="net net-{{ pl.toLowerCase() }}">{{ pl === 'INSTAGRAM' ? 'IG' : 'TT' }}</span> }
+              </span>
+              <span class="cal-caption">{{ p.caption || '(sans texte)' }}</span>
+            </a>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="card">
+      <h3>À venir</h3>
+      @for (p of upcoming(); track p.id) {
+        <a class="side-post" [routerLink]="['/posts', p.id]">
+          @if (thumb(p); as t) { <img [src]="t" alt="" /> } @else { <span class="thumb-video">▶</span> }
+          <span>
+            <strong>{{ formatDateTime(p.scheduledAt) }}</strong>
+            <span class="muted line-clamp">{{ p.caption || '(sans texte)' }}</span>
+          </span>
+        </a>
+      } @empty {
+        <p class="muted">Rien de programmé.</p>
+      }
+    </section>
+
+    <section class="card">
+      <h3>Brouillons</h3>
+      @for (p of drafts(); track p.id) {
+        <a class="side-post" [routerLink]="['/posts', p.id]">
+          @if (thumb(p); as t) { <img [src]="t" alt="" /> } @else { <span class="thumb-video">▶</span> }
+          <span class="muted line-clamp">{{ p.caption || '(sans texte)' }}</span>
+        </a>
+      } @empty {
+        <p class="muted">Aucun brouillon.</p>
+      }
+    </section>
+
+    <section class="card legend">
+      <h3>Légende</h3>
+      @for (s of legend; track s) {
+        <span class="badge status-{{ s.toLowerCase() }}">{{ statusLabels[s] }}</span>
+      }
+    </section>
+  </aside>
+</div>

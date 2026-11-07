@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: hand-com
+  config:
+    # Charge le fichier .env à la racine du projet (lancement local avec ./mvnw)
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5442/handcom}
+    username: ${DB_USER:handcom}
+    password: ${DB_PASSWORD:handcom}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 520MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  admin-username: ${ADMIN_USERNAME:admin}
+  admin-password: ${ADMIN_PASSWORD:changeme}
+  # URL publique (tunnel ngrok/cloudflare) qui pointe vers ce backend.
+  # Instagram télécharge les médias depuis cette URL, et les redirections OAuth y reviennent.
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
+  # URL de l'interface Angular, vers laquelle on revient après la connexion d'un compte
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  media-dir: ${MEDIA_DIR:./data/media}
+  scheduler-delay-ms: ${SCHEDULER_DELAY_MS:15000}
+  instagram:
+    client-id: ${INSTAGRAM_CLIENT_ID:}
+    client-secret: ${INSTAGRAM_CLIENT_SECRET:}
+    graph-version: ${INSTAGRAM_GRAPH_VERSION:v23.0}
+  tiktok:
+    client-key: ${TIKTOK_CLIENT_KEY:}
+    client-secret: ${TIKTOK_CLIENT_SECRET:}

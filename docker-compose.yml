@@ -1,0 +1,45 @@
+# Lancement complet : docker compose up --build
+# Interface : http://localhost:4200   API : http://localhost:8080
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: handcom
+      POSTGRES_USER: handcom
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-handcom}
+    ports:
+      - "${DB_PORT:-5442}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U handcom -d handcom"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/handcom
+      DB_USER: handcom
+      DB_PASSWORD: ${DB_PASSWORD:-handcom}
+      MEDIA_DIR: /data/media
+    ports:
+      - "8080:8080"
+    volumes:
+      - media:/data/media
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  media:
