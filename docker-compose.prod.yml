@@ -1,0 +1,67 @@
+# Déploiement sur le serveur, derrière Traefik (réseau externe "web")
+# Lancement : docker compose -f docker-compose.prod.yml up -d --build
+# Site : https://hand-com.elearnchess.com
+#
+# Seul le frontend (nginx) est branché sur le réseau "web" de Traefik.
+# Il relaie /api et /media vers le backend sur le réseau interne du projet.
+# Aucun port n'est ouvert sur l'hôte : la base et l'API ne sont pas joignables de l'extérieur.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: handcom
+      POSTGRES_USER: handcom
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-handcom}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U handcom -d handcom"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  handcom-backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/handcom
+      DB_USER: handcom
+      DB_PASSWORD: ${DB_PASSWORD:-handcom}
+      MEDIA_DIR: /data/media
+      PUBLIC_BASE_URL: https://hand-com.elearnchess.com
+      FRONTEND_URL: https://hand-com.elearnchess.com
+    volumes:
+      - media:/data/media
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    networks:
+      - internal
+      - web
+    depends_on:
+      - handcom-backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.handcom.rule=Host(`hand-com.elearnchess.com`)"
+      - "traefik.http.routers.handcom.entrypoints=websecure"
+      - "traefik.http.services.handcom.loadbalancer.server.port=80"
+
+networks:
+  internal:
+  web:
+    external: true
+
+volumes:
+  pgdata:
+  media:

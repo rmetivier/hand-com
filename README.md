@@ -48,11 +48,28 @@ Instagram et TikTok doivent pouvoir **revenir sur votre serveur** après la conn
 1. Créez un compte sur ngrok.com et réservez votre domaine gratuit (menu *Domains*).
 2. `ngrok http --url=votre-domaine.ngrok-free.app 8080`
 3. Dans `.env` : `PUBLIC_BASE_URL=https://votre-domaine.ngrok-free.app`
-4. Redémarrez le backend (`docker compose up -d backend` ou relancez `./mvnw`).
+4. Redémarrez le backend (`docker compose up -d handcom-backend` ou relancez `./mvnw`).
 
 La page **Comptes** affiche un avertissement tant que l'URL n'est pas en HTTPS public, et donne les URL de redirection exactes à copier dans les apps.
 
 > Seuls `/media/**` (fichiers à usage public, aux noms aléatoires) et les retours OAuth sont accessibles sans mot de passe. Tout le reste demande l'identifiant admin.
+
+---
+
+### Sur le serveur (Traefik)
+
+Le fichier `docker-compose.prod.yml` publie le site sur **https://hand-com.elearnchess.com** via Traefik (réseau externe `web`, entrypoint `websecure`). Aucun port n'est ouvert sur l'hôte, et le tunnel ngrok devient inutile.
+
+```bash
+git clone git@github.com:rmetivier/hand-com.git && cd hand-com
+cp .env.example .env      # changez ADMIN_PASSWORD et DB_PASSWORD, ajoutez les clés Instagram/TikTok
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Mise à jour : `git pull && docker compose -f docker-compose.prod.yml up -d --build`
+
+`PUBLIC_BASE_URL` et `FRONTEND_URL` sont fixées dans `docker-compose.prod.yml`. Les URL de redirection à déclarer dans les apps deviennent :
+`https://hand-com.elearnchess.com/api/oauth/instagram/callback` et `https://hand-com.elearnchess.com/api/oauth/tiktok/callback`.
 
 ---
 

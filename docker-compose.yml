@@ -17,7 +17,7 @@ services:
       timeout: 3s
       retries: 10
 
-  backend:
+  handcom-backend:
     build: ./backend
     env_file: .env
     environment:
@@ -38,7 +38,7 @@ services:
     ports:
       - "4200:80"
     depends_on:
-      - backend
+      - handcom-backend
 
 volumes:
   pgdata:
