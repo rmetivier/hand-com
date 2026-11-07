@@ -1,10 +1,15 @@
 # Déploiement sur le serveur, derrière Traefik (réseau externe "web")
-# Lancement : docker compose -f docker-compose.prod.yml up -d --build
+# Lancement : docker-compose -f docker-compose.prod.yml up -d --build
 # Site : https://hand-com.elearnchess.com
 #
 # Seul le frontend (nginx) est branché sur le réseau "web" de Traefik.
 # Il relaie /api et /media vers le backend sur le réseau interne du projet.
 # Aucun port n'est ouvert sur l'hôte : la base et l'API ne sont pas joignables de l'extérieur.
+#
+# Compatible docker-compose v1 : si le backend démarre avant que la base soit prête,
+# il s'arrête et "restart: unless-stopped" le relance jusqu'à ce que la base réponde.
+version: '3'
+
 services:
   db:
     image: postgres:17-alpine
@@ -39,8 +44,7 @@ services:
     networks:
       - internal
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
   frontend:
     build: ./frontend

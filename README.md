@@ -63,10 +63,10 @@ Le fichier `docker-compose.prod.yml` publie le site sur **https://hand-com.elear
 ```bash
 git clone git@github.com:rmetivier/hand-com.git && cd hand-com
 cp .env.example .env      # changez ADMIN_PASSWORD et DB_PASSWORD, ajoutez les clés Instagram/TikTok
-docker compose -f docker-compose.prod.yml up -d --build
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-Mise à jour : `git pull && docker compose -f docker-compose.prod.yml up -d --build`
+Mise à jour : `git pull && docker-compose -f docker-compose.prod.yml up -d --build`
 
 `PUBLIC_BASE_URL` et `FRONTEND_URL` sont fixées dans `docker-compose.prod.yml`. Les URL de redirection à déclarer dans les apps deviennent :
 `https://hand-com.elearnchess.com/api/oauth/instagram/callback` et `https://hand-com.elearnchess.com/api/oauth/tiktok/callback`.
